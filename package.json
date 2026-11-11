@@ -1,0 +1,29 @@
+{
+  "name": "ae4-sistemasoperativos",
+  "version": "1.0.0",
+  "description": "Simulador de asignación de espacio en disco de NTFS (Windows 11)",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsc && node dist/main.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MartinaAcostaa/AE4-SistemasOperativos.git"
+  },
+  "keywords": [],
+  "author": "Acosta Martina, Azcona Valentina",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/MartinaAcostaa/AE4-SistemasOperativos/issues"
+  },
+  "homepage": "https://github.com/MartinaAcostaa/AE4-SistemasOperativos#readme",
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}
