@@ -58,6 +58,10 @@ Después aparece el menú. Se escribe el número de la opción y se aprieta Ente
   5) Ver mapa del disco
   6) Ver MFT
   7) Ver métricas
+  -Ver MFT: muestra cada archivo con su número de registro, su tamaño y su lista de runs (VCN → LCN).
+  -Caso de prueba del taller: ejecuta solo la secuencia docA, docB y docC de 4 clusters, elimina docB y crea docD de 6 clusters. Con 64 clusters docD queda contiguo; con 18 clusters queda fragmentado en 2 runs.
+  -Nuevo disco: vuelve a pedir la configuración, por ejemplo para cambiar el tamaño del disco sin cerrar el programa.
+  -Simplificaciones respecto de NTFS: el tamaño se indica en clusters (no en bytes), no hay directorios ni permisos (ACL) y el área de sistema tiene tamaño fijo.
   0) Salir
 
 -Crear archivo: pide el nombre y el tamaño en clusters. El programa reserva un registro en la MFT, busca un hueco libre en el $Bitmap según la estrategia y marca esos clusters como ocupados. Si ningún hueco alcanza, el archivo se divide en varios runs. Si el tamaño es 0, el archivo es residente: sus datos se guardan dentro del registro de la MFT y no ocupa clusters.
