@@ -111,6 +111,26 @@ function mostrarMetricas(volumen: VolumenNTFS): void {
   fila('Runs por archivo (promedio):', m.promedioTramosPorArchivo.toFixed(2));
 }
 
+// Caso de prueba de la Parte 3 del taller: muestra cómo aparece la fragmentación.
+// Con 64 clusters docD entra contiguo, con 18 clusters queda fragmentado en 2 runs.
+function casoDePrueba(volumen: VolumenNTFS): void {
+  console.log(`\n=== Caso de prueba del taller (disco vacío de ${volumen.config.totalClusters} clusters) ===`);
+  const pasos: [string, () => string[]][] = [
+    ['Crear docA.txt (4 clusters)', () => volumen.crear('docA.txt', 4)],
+    ['Crear docB.txt (4 clusters)', () => volumen.crear('docB.txt', 4)],
+    ['Crear docC.txt (4 clusters)', () => volumen.crear('docC.txt', 4)],
+    ['Eliminar docB.txt (queda un hueco en el medio)', () => volumen.eliminar('docB.txt')],
+    ['Crear docD.txt (6 clusters)', () => volumen.crear('docD.txt', 6)],
+  ];
+  for (const [titulo, accion] of pasos) {
+    console.log(`\n> ${titulo}`);
+    mostrarPasos(accion());
+    mostrarMapa(volumen);
+  }
+  mostrarMFT(volumen);
+  mostrarMetricas(volumen);
+}
+
 // Parte 2: el menú. Se repite hasta que el usuario elige salir
 async function menu(volumen: VolumenNTFS): Promise<void> {
   while (true) {
@@ -122,6 +142,8 @@ async function menu(volumen: VolumenNTFS): Promise<void> {
     console.log('  5) Ver mapa del disco');
     console.log('  6) Ver MFT');
     console.log('  7) Ver métricas');
+    console.log('  8) Caso de prueba del taller (docA, docB, docC, docD)');
+    console.log('  9) Nuevo disco (volver a configurar)');
     console.log('  0) Salir');
     const opcion = (await rl.question('Opción: ')).trim();
 
@@ -132,12 +154,14 @@ async function menu(volumen: VolumenNTFS): Promise<void> {
           const clusters = await pedirEntero('Tamaño en clusters (0 = residente)', 1);
           mostrarPasos(volumen.crear(nombre, clusters));
           console.log('✓ Archivo creado.');
+                    mostrarMapa(volumen);
           break;
         }
         case '2': {
           const nombre = await rl.question('Nombre del archivo a eliminar: ');
           mostrarPasos(volumen.eliminar(nombre));
           console.log('✓ Archivo eliminado.');
+                    mostrarMapa(volumen);
           break;
         }
         case '3':
@@ -156,6 +180,15 @@ async function menu(volumen: VolumenNTFS): Promise<void> {
           break;
         case '7':
           mostrarMetricas(volumen);
+          break;
+        case '8':
+          volumen = new VolumenNTFS(volumen.config); // disco vacío con la misma configuración
+          casoDePrueba(volumen);
+          break;
+        case '9':
+          volumen = await configurarVolumen();
+          console.log('✓ Disco nuevo creado.');
+          mostrarMapa(volumen);
           break;
         case '0':
           return;
