@@ -50,6 +50,16 @@ export class VolumenNTFS {
     if (!Number.isInteger(config.totalClusters) || config.totalClusters < 8 || config.totalClusters > 4096) {
       throw new ErrorSistemaArchivos('PARAMETRO_INVALIDO', 'El disco debe tener entre 8 y 4096 clusters.');
     }
+
+    if (!Number.isInteger(config.clustersSistema) || config.clustersSistema < 0 || config.clustersSistema >= config.totalClusters) {
+      throw new ErrorSistemaArchivos('PARAMETRO_INVALIDO',
+        `Los clusters de sistema deben ser un entero entre 0 y ${config.totalClusters - 1}.`);
+    }
+    
+    if (!Number.isInteger(config.maxArchivos) || config.maxArchivos < 1) {
+      throw new ErrorSistemaArchivos('PARAMETRO_INVALIDO', 'La MFT debe admitir al menos 1 archivo.');
+    }
+
     this.bitmap = new Bitmap(config.totalClusters);
     this.mft = new MFT(config.maxArchivos);
     // Los primeros clusters los ocupa el propio sistema de archivos

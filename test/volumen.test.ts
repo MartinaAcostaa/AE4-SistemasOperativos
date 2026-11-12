@@ -85,4 +85,11 @@ describe('VolumenNTFS', () => {
   it('rechaza discos de tamaño inválido', () => {
     expect(() => new VolumenNTFS({ ...CONFIG_POR_DEFECTO, totalClusters: 2 })).toThrow('entre 8 y 4096');
   });
+
+  it('rechaza clusters de sistema o MFT inválidos', () => {
+    expect(() => new VolumenNTFS({ ...CONFIG_POR_DEFECTO, clustersSistema: 64 })).toThrow('clusters de sistema');
+    expect(() => new VolumenNTFS({ ...CONFIG_POR_DEFECTO, clustersSistema: -1 })).toThrow('clusters de sistema');
+    expect(() => new VolumenNTFS({ ...CONFIG_POR_DEFECTO, maxArchivos: 0 })).toThrow('al menos 1 archivo');
+  });
+
 });
