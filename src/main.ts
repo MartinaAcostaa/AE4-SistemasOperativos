@@ -1,6 +1,7 @@
 import * as readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
-import { VolumenNTFS, CONFIG_POR_DEFECTO, ConfigVolumen } from './volumen';
+import { VolumenNTFS, CONFIG_POR_DEFECTO, ConfigVolumen, describirRuns } from './volumen';
+import { METARCHIVOS } from './mft';
 import { ErrorSistemaArchivos, Estrategia, ESTRATEGIAS } from './tipos';
 
 const rl = readline.createInterface({ input, output });
@@ -60,6 +61,56 @@ function mostrarPasos(pasos: string[]): void {
   for (const p of pasos) console.log(`  • ${p}`);
 }
 
+// ===== Parte 3: vistas =====
+
+// Mapa del disco: cada caracter es un cluster.
+// S = sistema, . = libre, una letra = el archivo que ocupa ese cluster
+function mostrarMapa(volumen: VolumenNTFS): void {
+  const POR_FILA = 32;
+  const duenios = volumen.duenioDeCluster();
+  console.log('\n--- Mapa del disco ($Bitmap) ---');
+  for (let i = 0; i < duenios.length; i += POR_FILA) {
+    const fila = duenios
+      .slice(i, i + POR_FILA)
+      .map((d) => (d === null ? '.' : d === 'sistema' ? 'S' : d.simbolo))
+      .join('');
+    console.log(`  ${String(i).padStart(4)} | ${fila}`); // número del primer cluster (LCN) de la fila
+  }
+  // Leyenda: qué letra es cada archivo
+  const leyenda = volumen.mft.listar().filter((r) => !r.residente).map((r) => `${r.simbolo} = ${r.nombre}`);
+  console.log(`  Leyenda: S = sistema, . = libre${leyenda.length ? ', ' + leyenda.join(', ') : ''}`);
+}
+
+// Tabla de la MFT: un renglón por registro, con su lista de runs
+function mostrarMFT(volumen: VolumenNTFS): void {
+  console.log('\n--- MFT (Master File Table) ---');
+  console.log(`  Registros 0 a 15: metarchivos del sistema (${METARCHIVOS.join(', ')}, ...)`);
+  const registros = volumen.mft.listar();
+  if (registros.length === 0) {
+    console.log('  No hay archivos de usuario todavía.');
+    return;
+  }
+  console.log('  #    Letra  Nombre               Clusters  Runs (VCN → LCN)');
+  for (const r of registros) {
+    const runs = r.residente ? 'RESIDENTE (datos dentro del registro)' : describirRuns(r.tramos);
+    console.log(`  ${String(r.numero).padEnd(4)} ${r.simbolo.padEnd(6)} ${r.nombre.padEnd(20)} ${String(r.tamanioClusters).padEnd(9)} ${runs}`);
+  }
+}
+
+// Métricas de ocupación y fragmentación
+function mostrarMetricas(volumen: VolumenNTFS): void {
+  const m = volumen.metricas();
+  console.log('\n--- Métricas del volumen ---');
+  const fila = (etiqueta: string, valor: string) => console.log(`  ${etiqueta.padEnd(28)} ${valor}`);
+  fila('Capacidad:', `${m.clustersTotales} clusters (${m.capacidadKB} KB)`);
+  fila('Sistema / usados / libres:', `${m.clustersSistema} / ${m.clustersUsados} / ${m.clustersLibres} (${m.libreKB} KB libres)`);
+  fila('Ocupación:', `${m.porcentajeOcupacion.toFixed(1)} %`);
+  fila('Huecos libres:', `${m.cantidadHuecos} (el más grande: ${m.mayorHueco} clusters)`);
+  fila('Fragmentación externa:', `${m.fragmentacionExterna.toFixed(1)} %`);
+  fila('Archivos:', `${m.cantidadArchivos} (${m.archivosResidentes} residentes, ${m.archivosFragmentados} fragmentados)`);
+  fila('Runs por archivo (promedio):', m.promedioTramosPorArchivo.toFixed(2));
+}
+
 // Parte 2: el menú. Se repite hasta que el usuario elige salir
 async function menu(volumen: VolumenNTFS): Promise<void> {
   while (true) {
@@ -68,6 +119,9 @@ async function menu(volumen: VolumenNTFS): Promise<void> {
     console.log('  2) Eliminar archivo');
     console.log('  3) Cambiar estrategia');
     console.log('  4) Desfragmentar');
+    console.log('  5) Ver mapa del disco');
+    console.log('  6) Ver MFT');
+    console.log('  7) Ver métricas');
     console.log('  0) Salir');
     const opcion = (await rl.question('Opción: ')).trim();
 
@@ -93,6 +147,15 @@ async function menu(volumen: VolumenNTFS): Promise<void> {
         case '4':
           mostrarPasos(volumen.desfragmentar());
           console.log('✓ Disco desfragmentado.');
+          break;
+        case '5':
+          mostrarMapa(volumen);
+          break;
+        case '6':
+          mostrarMFT(volumen);
+          break;
+        case '7':
+          mostrarMetricas(volumen);
           break;
         case '0':
           return;
